@@ -611,6 +611,33 @@ const server = http.createServer(async(req,res)=>{
       return res.end(JSON.stringify(db.players));
     }
 
+    // Public read endpoint for the Minecraft Fabric mod.
+    // Reads the same ONYX PostgreSQL-backed cache used by the website.
+    if(u.pathname.startsWith("/api/onyx/player/") && req.method==="GET"){
+      const username=decodeURIComponent(u.pathname.slice("/api/onyx/player/".length)).trim();
+      if(!username) return sendJSON(res,{error:"username required"},400);
+      const player=db.players.find(v=>String(v.name||"").trim().toLowerCase()===username.toLowerCase());
+      if(!player) return sendJSON(res,{error:"player not found"},404);
+
+      const rankings=player.rankings||{};
+      const ranked=Object.values(rankings)
+        .map(r=>({rank:normalizeTier(r?.rank),points:pointsForTier(r?.rank)}))
+        .filter(r=>r.points>0);
+      if(!ranked.length) return sendJSON(res,{error:"player has no tier tests"},404);
+
+      // Higher points means the stronger/better tier.
+      const best=ranked.sort((a,b)=>b.points-a.points)[0];
+      const tierMatch=best.rank.match(/^[HL]T([1-5])$/);
+      const displayTier=tierMatch ? `Tier ${tierMatch[1]}` : best.rank;
+
+      return sendJSON(res,{
+        username:player.name,
+        highest_tier:displayTier,
+        highest_tier_code:best.rank,
+        emoji:player.emoji || "◆"
+      });
+    }
+
     if(u.pathname==="/api/onyx/player" && req.method==="POST"){
       if(!requireAdmin(req,res)) return authError(res);
       const x=await body(req);
