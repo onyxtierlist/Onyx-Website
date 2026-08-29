@@ -14,10 +14,10 @@ const MODES = {
   mace:{title:"Mace Tier List",label:"Mace",desc:"Mace PvP rankings.",key:"mace"}
 };
 
-const TIERS = ["LT5","HT5","LT4","HT4","LT3","HT3","LT2","HT2","LT1","HT1"];
-const TIER_ORDER = ["HT1","LT1","HT2","LT2","HT3","LT3","HT4","LT4","HT5","LT5"];
+const TIERS = ["Tier 5","Tier 5","Tier 4","Tier 4","Tier 3","Tier 3","Tier 2","Tier 2","Tier 1","Tier 1"];
+const TIER_ORDER = ["Tier 1","Tier 1","Tier 2","Tier 2","Tier 3","Tier 3","Tier 4","Tier 4","Tier 5","Tier 5"];
 const TIER_LABELS = {
-  LT5:"LT5",HT5:"HT5",LT4:"LT4",HT4:"HT4",LT3:"LT3",HT3:"HT3",LT2:"LT2",HT2:"HT2",LT1:"LT1",HT1:"HT1"
+  Tier 5:"Tier 5",Tier 5:"Tier 5",Tier 4:"Tier 4",Tier 4:"Tier 4",Tier 3:"Tier 3",Tier 3:"Tier 3",Tier 2:"Tier 2",Tier 2:"Tier 2",Tier 1:"Tier 1",Tier 1:"Tier 1"
 };
 
 let players = [];
@@ -104,7 +104,7 @@ function filteredPlayers(){
 }
 
 function tierPointsFor(tier){
-  const points = {LT5:1,HT5:2,LT4:3,HT4:4,LT3:6,HT3:10,LT2:20,HT2:30,LT1:45,HT1:60};
+  const points = {Tier 5:1,Tier 5:2,Tier 4:3,Tier 4:4,Tier 3:6,Tier 3:10,Tier 2:20,Tier 2:30,Tier 1:45,Tier 1:60};
   return points[rawTier(tier)] ?? 0;
 }
 
@@ -199,7 +199,7 @@ function highestTierForMode(player, mode){
 function renderTierTabsForMode(mode, data){
   if(mode === "overall") return "";
 
-  const tiers = ["HT1","LT1","HT2","LT2","HT3","LT3","HT4","LT4","HT5","LT5"];
+  const tiers = ["Tier 1","Tier 1","Tier 2","Tier 2","Tier 3","Tier 3","Tier 4","Tier 4","Tier 5","Tier 5"];
   const counts = Object.fromEntries(tiers.map(t => [t, 0]));
   data.forEach(p => {
     const t = rawTier(p?.rankings?.[mode]);
