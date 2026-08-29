@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#080c09"><title>ONYX — Reference</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Russo+One&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body class="onyx-page"><header class="hero-nav site-nav">
+  <a class="brand" href="index.html" aria-label="ONYX Tier List home">
+    <img src="assets/onyx-logo.png" alt="" class="brand-icon">
+    <span><b>ONYX</b><small>TIER LIST</small></span>
+  </a>
+  <nav class="main-nav" aria-label="Main navigation">
+    <a href="index.html">HOME</a>
+    <a href="index.html#tiers">TIERS</a><a href="kits.html">KITS</a>
+    <a href="players.html">PLAYERS</a>
+    <a href="index.html#players">LEADERBOARD</a>
+    <a href="index.html#matches">MATCHES</a>
+    <a href="index.html#about">ABOUT</a>
+  </nav>
+  <a class="admin-button" href="admin.html"><span>♜</span> ADMIN</a>
+</header>
+<div class="site-background" aria-hidden="true"></div><div class="site-overlay" aria-hidden="true"></div><main class="page-shell reference-page"><div class="themed-heading"><div><div class="eyebrow">REFERENCE DATABASE</div><h1>MCPVP Player Lookup</h1><p>Reference only. Players do not enter ONYX rankings until they are tier tested on your server.</p></div><div class="page-search"><span>⌕</span><input id="q" placeholder="Search MCPVP players" oninput="go()"></div></div><div id="list" class="reference-list"></div></main><footer class="site-footer themed-footer">
+  <div>© 2026 ONYX Tier List. All rights reserved.</div>
+  <div>Minecraft is a trademark of Mojang Studios and Microsoft. ONYX is an independent project and is not affiliated with or endorsed by Mojang Studios or Microsoft.</div>
+</footer><script>let data=[];fetch('/api/mcpvp/players').then(r=>r.json()).then(x=>{data=x;go()});function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}function go(){let q=document.getElementById('q').value.toLowerCase();document.getElementById('list').innerHTML=data.filter(p=>p.name.toLowerCase().includes(q)).slice(0,50).map((p,i)=>`<div class="reference-card"><span class="ref-index">${String(i+1).padStart(2,'0')}</span><div><b>${esc(p.name)}</b><small>${esc(p.region)} · ${esc(p.points)} pts</small></div></div>`).join('')||'<p class="muted">No players found.</p>'}</script></body></html>

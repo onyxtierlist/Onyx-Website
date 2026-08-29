@@ -1,0 +1,16 @@
+# Merge this elo section into the MAIN OnyxPvP config.yml if your main plugin
+# already owns the elo.tiers section. This is the exact ONYX tier scale.
+# 1 ONYX point = 1000 ELO.
+elo:
+  default-tier: LT5
+  tiers:
+    LT5: 1000
+    HT5: 2000
+    LT4: 3000
+    HT4: 4000
+    LT3: 6000
+    HT3: 10000
+    LT2: 20000
+    HT2: 30000
+    LT1: 45000
+    HT1: 60000

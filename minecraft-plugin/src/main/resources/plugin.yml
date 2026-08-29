@@ -1,0 +1,8 @@
+name: OnyxPlayedSync
+version: 1.0.0
+main: com.onyx.tierlist.OnyxPlayedSync
+api-version: '1.21'
+author: ONYX
+website: https://example.com
+
+description: Automatically adds every joining player to the ONYX PLAYED database.

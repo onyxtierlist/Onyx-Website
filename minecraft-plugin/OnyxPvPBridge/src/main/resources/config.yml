@@ -1,0 +1,20 @@
+# Onyx PvP -> Onyx website sync
+api-url: "https://onyx-tier-list.onrender.com/api/pvp/match"
+token: "PASTE_THE_PRIVATE_ONYX_INGEST_TOKEN_HERE"
+
+# ONYX ELO tier thresholds.
+# Scale: 1 ONYX point = 1000 ELO, preserving the exact tier-point proportions.
+elo:
+  default-tier: LT5
+  tiers:
+    LT5: 1000
+    HT5: 2000
+    LT4: 3000
+    HT4: 4000
+    LT3: 6000
+    HT3: 10000
+    LT2: 20000
+    HT2: 30000
+    LT1: 45000
+    HT1: 60000
+

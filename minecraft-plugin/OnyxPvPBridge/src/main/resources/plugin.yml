@@ -1,0 +1,13 @@
+name: OnyxPvPBridge
+version: 1.1.4
+main: com.onyx.bridge.OnyxPvPBridge
+api-version: '1.21'
+author: Onyx
+depend: [OnyxPvP]
+commands:
+  elo:
+    description: Admin ELO management
+    usage: /elo set <player> <mode> <amount>
+permissions:
+  onyxpvp.admin:
+    default: op

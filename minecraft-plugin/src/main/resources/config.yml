@@ -1,0 +1,6 @@
+# URL of the ONYX PLAYED endpoint.
+api-url: "http://127.0.0.1:3000/api/players/played"
+
+# Must match ONYX_INGEST_TOKEN in the ONYX server environment.
+# Leave blank only if the ONYX server has authentication disabled.
+token: "PASTE_THE_PRIVATE_ONYX_INGEST_TOKEN_HERE"
