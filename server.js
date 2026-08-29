@@ -569,6 +569,28 @@ const server = http.createServer(async(req,res)=>{
       return res.end(JSON.stringify(p));
     }
 
+    // Minecraft Fabric client endpoint. Returns the highest ONYX tier for one player.
+    // This is intentionally read-only and contains no admin/database credentials.
+    if(u.pathname.startsWith("/api/onyx/player/") && req.method==="GET"){
+      const name=decodeURIComponent(u.pathname.slice("/api/onyx/player/".length)).trim();
+      if(!name) return sendJSON(res,{error:"player name required"},400);
+      const played=readPlayedDB();
+      const p=db.players.find(v => String(v.name||"").toLowerCase()===name.toLowerCase());
+      if(!p || !played.players.some(v => String(v.name||"").toLowerCase()===name.toLowerCase()))
+        return sendJSON(res,{error:"player not found"},404);
+
+      const tierPoints={LT5:1,HT5:2,LT4:3,HT4:4,LT3:6,HT3:10,LT2:20,HT2:30,LT1:45,HT1:60};
+      const emojiMap={LT5:"§6◆",HT5:"§7◆",LT4:"§f◆",HT4:"§e◆",LT3:"§b◆",HT3:"§a◆",LT2:"§9◆",HT2:"§d◆",LT1:"§c◆",HT1:"§5◆"};
+      let highest=null;
+      for(const ranking of Object.values(p.rankings||{})){
+        const tier=normalizeTier(ranking?.rank||ranking?.tier);
+        if(tier && tierPoints[tier] && (!highest || tierPoints[tier]>tierPoints[highest])) highest=tier;
+      }
+      if(!highest) return sendJSON(res,{error:"player has no tier"},404);
+      res.writeHead(200,{"Content-Type":"application/json","Cache-Control":"no-store","Access-Control-Allow-Origin":"*"});
+      return res.end(JSON.stringify({name:p.name,uuid:p.uuid||"",highest_tier:highest,emoji:emojiMap[highest],points:tierPoints[highest]}));
+    }
+
     // Tier-tested database: only players actually tested by ONYX appear in rankings.
     if(u.pathname==="/api/onyx/players" && req.method==="GET"){
       const played=readPlayedDB();
