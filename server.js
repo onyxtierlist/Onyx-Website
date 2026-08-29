@@ -35,6 +35,7 @@ const pool = new Pool({
   ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false }
 });
 let dbCache = {players:[], tests:[]};
+let dbReady = false;
 let playedCache = {players:[]};
 const ONYX_INGEST_TOKEN = process.env.ONYX_INGEST_TOKEN || "";
 const MCPVP_DATA = "https://www.mcpvp.com/tiers/data";
@@ -375,6 +376,17 @@ const server = http.createServer(async(req,res)=>{
     const u=new URL(req.url,`http://${req.headers.host}`);
     const db=readDB();
 
+    // Public deployment health check. This route is intentionally available
+    // before authentication so Render/Railway health checks can verify that
+    // the Node process is alive. Database status is reported separately.
+    if(u.pathname==="/health" && req.method==="GET"){
+      return sendJSON(res,{
+        ok:true,
+        service:"onyx-tier-list",
+        database: dbReady ? "ready" : "not_ready"
+      }, dbReady ? 200 : 503);
+    }
+
     if(u.pathname==="/api/auth/login" && req.method==="POST"){
       const x=await body(req);
       if(!ADMIN_USERNAME || !ADMIN_PASSWORD_HASH || !SESSION_SECRET) return sendJSON(res,{error:"admin auth is not configured on this server"},503);
@@ -567,28 +579,6 @@ const server = http.createServer(async(req,res)=>{
       await writePlayedDB(played);
       res.writeHead(200,{"Content-Type":"application/json"});
       return res.end(JSON.stringify(p));
-    }
-
-    // Minecraft Fabric client endpoint. Returns the highest ONYX tier for one player.
-    // This is intentionally read-only and contains no admin/database credentials.
-    if(u.pathname.startsWith("/api/onyx/player/") && req.method==="GET"){
-      const name=decodeURIComponent(u.pathname.slice("/api/onyx/player/".length)).trim();
-      if(!name) return sendJSON(res,{error:"player name required"},400);
-      const played=readPlayedDB();
-      const p=db.players.find(v => String(v.name||"").toLowerCase()===name.toLowerCase());
-      if(!p || !played.players.some(v => String(v.name||"").toLowerCase()===name.toLowerCase()))
-        return sendJSON(res,{error:"player not found"},404);
-
-      const tierPoints={LT5:1,HT5:2,LT4:3,HT4:4,LT3:6,HT3:10,LT2:20,HT2:30,LT1:45,HT1:60};
-      const emojiMap={LT5:"§6◆",HT5:"§7◆",LT4:"§f◆",HT4:"§e◆",LT3:"§b◆",HT3:"§a◆",LT2:"§9◆",HT2:"§d◆",LT1:"§c◆",HT1:"§5◆"};
-      let highest=null;
-      for(const ranking of Object.values(p.rankings||{})){
-        const tier=normalizeTier(ranking?.rank||ranking?.tier);
-        if(tier && tierPoints[tier] && (!highest || tierPoints[tier]>tierPoints[highest])) highest=tier;
-      }
-      if(!highest) return sendJSON(res,{error:"player has no tier"},404);
-      res.writeHead(200,{"Content-Type":"application/json","Cache-Control":"no-store","Access-Control-Allow-Origin":"*"});
-      return res.end(JSON.stringify({name:p.name,uuid:p.uuid||"",highest_tier:highest,emoji:emojiMap[highest],points:tierPoints[highest]}));
     }
 
     // Tier-tested database: only players actually tested by ONYX appear in rankings.
@@ -788,8 +778,17 @@ const server = http.createServer(async(req,res)=>{
 });
 
 initDatabase()
-  .then(()=>server.listen(PORT,()=>console.log(`Onyx Tier List running at http://localhost:${PORT}`)))
+  .then(()=>{
+    dbReady = true;
+    server.listen(PORT,()=>console.log(`Onyx Tier List running at http://localhost:${PORT}`));
+  })
   .catch(err=>{
+    dbReady = false;
     console.error("Failed to initialize PostgreSQL storage:", err);
-    process.exit(1);
+    console.error("Render fix: check DATABASE_URL in the Web Service environment. "
+      + "A stale/deleted Render PostgreSQL hostname causes getaddrinfo ENOTFOUND. "
+      + "Copy the CURRENT database connection URL from the active PostgreSQL service.");
+    // Keep the HTTP process alive so /health reports the real database state.
+    // API/database routes will still fail until DATABASE_URL is corrected.
+    server.listen(PORT,()=>console.log(`Onyx Tier List HTTP process running at http://localhost:${PORT}; database is NOT ready.`));
   });
