@@ -53,30 +53,14 @@ function rawTier(value){
   if(typeof value === "object") return String(value.rank ?? value.tier ?? value.name ?? "").toUpperCase();
   return String(value).toUpperCase();
 }
-// Everywhere outside the tier filter tabs, keep the real ONYX rank code (HT1/LT1/etc.).
 function displayTier(value){
-  return rawTier(value);
-}
-
-// The tier filter tabs intentionally group HT/LT into a human-friendly Tier 1-5 label.
-function tierTabGroup(value){
-  const raw = rawTier(value);
-  const m = raw.match(/^[HL]T([1-5])$/);
+  const raw=rawTier(value);
+  const m=raw.match(/^[HL]T([1-5])$/);
   if(m) return `Tier ${m[1]}`;
-  const generic = raw.match(/^TIER\s*([1-5])$/);
-  return generic ? `Tier ${generic[1]}` : raw;
+  return raw.startsWith("TIER ") ? raw : raw;
 }
-
 function tierScore(value){
-  const raw = rawTier(value);
-  const m = raw.match(/^[HL]T([1-5])$/);
-  if(m){
-    const tier = Number(m[1]);
-    // Lower tier number is stronger; HT is stronger than LT within the same tier.
-    return (6 - tier) * 100 + (raw.startsWith("HT") ? 1 : 0);
-  }
-  const grouped = tierTabGroup(raw);
-  const i = TIER_ORDER.indexOf(grouped);
+  const t=displayTier(value), i=TIER_ORDER.indexOf(t);
   return i===-1 ? -1 : TIER_ORDER.length-i;
 }
 function highestTier(player){
@@ -225,7 +209,7 @@ function renderTierTabsForMode(mode, data){
   const tiers = ["Tier 1","Tier 2","Tier 3","Tier 4","Tier 5"];
   const counts = Object.fromEntries(tiers.map(t => [t, 0]));
   data.forEach(p => {
-    const t = tierTabGroup(p?.rankings?.[mode]);
+    const t = displayTier(p?.rankings?.[mode]);
     if(counts[t] !== undefined) counts[t]++;
   });
 
@@ -256,7 +240,7 @@ function renderHomePlayers(){
   if(activeMode === "overall"){
     activeTier = null;
   } else if(activeTier){
-    data = data.filter(p => tierTabGroup(p?.rankings?.[activeMode]) === activeTier);
+    data = data.filter(p => displayTier(p?.rankings?.[activeMode]) === activeTier);
   }
 
   const baseData = players

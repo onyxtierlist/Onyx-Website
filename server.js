@@ -620,20 +620,42 @@ const server = http.createServer(async(req,res)=>{
       if(!player) return sendJSON(res,{error:"player not found"},404);
 
       const rankings=player.rankings||{};
-      const ranked=Object.values(rankings)
-        .map(r=>({rank:normalizeTier(r?.rank),points:pointsForTier(r?.rank)}))
-        .filter(r=>r.points>0);
-      if(!ranked.length) return sendJSON(res,{error:"player has no tier tests"},404);
 
-      // Higher points means the stronger/better tier.
-      const best=ranked.sort((a,b)=>b.points-a.points)[0];
-      const tierMatch=best.rank.match(/^[HL]T([1-5])$/);
-      const displayTier=tierMatch ? `Tier ${tierMatch[1]}` : best.rank;
+      // Public gamemode metadata used by the Minecraft mod.
+      // Keep the existing API fields for backwards compatibility, but also
+      // expose every tested gamemode and the two strongest gamemode results.
+      const GAMEMODE_ORDER=["vanilla","uhc","pot","nethop","smp","sword","axe","mace"];
+      const gamemodeTiers=GAMEMODE_ORDER.map(gamemode=>{
+        const ranking=rankings[gamemode];
+        const rank=normalizeTier(ranking?.rank);
+        const points=pointsForTier(rank);
+        if(points<=0) return null;
+        const tierMatch=rank.match(/^[HL]T([1-5])$/);
+        return {
+          gamemode,
+          tier:tierMatch ? `Tier ${tierMatch[1]}` : rank,
+          tier_code:rank,
+          points
+        };
+      }).filter(Boolean);
+
+      if(!gamemodeTiers.length) return sendJSON(res,{error:"player has no tier tests"},404);
+
+      // Higher points means the stronger/better tier. Stable gamemode order
+      // breaks ties so the response never jumps around between requests.
+      const ranked=[...gamemodeTiers].sort((a,b)=>b.points-a.points ||
+        GAMEMODE_ORDER.indexOf(a.gamemode)-GAMEMODE_ORDER.indexOf(b.gamemode));
+      const best=ranked[0];
 
       return sendJSON(res,{
         username:player.name,
-        highest_tier:displayTier,
-        highest_tier_code:best.rank,
+        highest_tier:best.tier,
+        highest_tier_code:best.tier_code,
+        highest_tier_gamemode:best.gamemode,
+        // New fields: the mod can use these without changing the existing
+        // endpoint or requiring a second request per player.
+        top_tiers:ranked.slice(0,2),
+        tiers:gamemodeTiers,
         emoji:player.emoji || "◆"
       });
     }
