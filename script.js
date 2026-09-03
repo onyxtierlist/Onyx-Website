@@ -269,7 +269,7 @@ function renderHomePlayers(){
   const baseData = players
     .filter(p => activeRegion === "all" || p.region === activeRegion)
     .filter(p => !q || String(p.name || "").toLowerCase().includes(q))
-    .filter(p => activeMode === "overall" ? isRankedPlayer(p) : isRankedTier(p?.rankings?.[activeMode]));
+    .filter(p => activeMode === "overall" ? isRankedPlayer(p) : isRankedTier(p.rankings?.[activeMode]));
 
   data = data.sort((a,b) =>
     playerModeScore(b, activeMode) - playerModeScore(a, activeMode) ||
@@ -439,7 +439,7 @@ function renderProfile(){
 async function renderKitsPage(){
   const root=document.getElementById("kitsRoot");
   if(!root) return;
-  const tested=players;
+  const tested=players.filter(isRankedPlayer);
   root.innerHTML=KIT_KEYS.map(k=>{
     const rows=tested.filter(p=>isRankedTier(p.rankings?.[k])).sort((a,b)=>tierScore(rawTier(b.rankings?.[k]))-tierScore(rawTier(a.rankings?.[k]))||String(a.name).localeCompare(String(b.name)));
     return `<section class="kit-directory-card">
