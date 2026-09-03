@@ -54,6 +54,13 @@ function rawTier(value){
   return String(value).toUpperCase();
 }
 // Everywhere outside the tier filter tabs, keep the real ONYX rank code (HT1/LT1/etc.).
+function isRankedTier(value){
+  return /^(LT|HT)[1-5]$/.test(rawTier(value));
+}
+function isRankedPlayer(player){
+  return !!player && Object.values(player?.rankings || {}).some(isRankedTier);
+}
+
 function displayTier(value){
   return rawTier(value);
 }
@@ -80,7 +87,7 @@ function tierScore(value){
   return i===-1 ? -1 : TIER_ORDER.length-i;
 }
 function highestTier(player){
-  const values=Object.values(player?.rankings || {}).map(rawTier).filter(Boolean);
+  const values=Object.values(player?.rankings || {}).map(rawTier).filter(isRankedTier);
   if(!values.length) return "";
   return values.sort((a,b)=>tierScore(b)-tierScore(a))[0];
 }
@@ -262,7 +269,7 @@ function renderHomePlayers(){
   const baseData = players
     .filter(p => activeRegion === "all" || p.region === activeRegion)
     .filter(p => !q || String(p.name || "").toLowerCase().includes(q))
-    .filter(p => activeMode === "overall" ? highestTier(p) : rawTier(p?.rankings?.[activeMode]));
+    .filter(p => activeMode === "overall" ? isRankedPlayer(p) : isRankedTier(p?.rankings?.[activeMode]));
 
   data = data.sort((a,b) =>
     playerModeScore(b, activeMode) - playerModeScore(a, activeMode) ||
@@ -282,7 +289,7 @@ function renderHomePlayers(){
   const rows = data.map((p,i) => {
     const skin = playerSkinUrl(p);
     const chips = activeMode === "overall"
-      ? KIT_KEYS.map(k => p.rankings?.[k] ? modeRankChip(p,k) : "").filter(Boolean).join("")
+      ? KIT_KEYS.map(k => isRankedTier(p.rankings?.[k]) ? modeRankChip(p,k) : "").filter(Boolean).join("")
       : modeRankChip(p, activeMode);
 
     const selectedTier = activeMode === "overall"
@@ -294,7 +301,7 @@ function renderHomePlayers(){
       : Number(p?.rankings?.[activeMode]?.points ?? tierPointsFor(selectedTier));
 
     return `
-      <div class="leader-row">
+      <div class="leader-row ${i < 3 ? `leader-top-${i+1}` : ""}">
         <div class="leader-rank">${i+1}</div>
         <div class="leader-player">
           <div class="leader-skin">${skin ? `<img src="${skin}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</div>
@@ -374,10 +381,13 @@ async function renderPlayersPage(){
     const played=await playedRes.json();
     const tested=normalizeApiPayload(await testedRes.json());
     const testedMap=new Map(tested.map(p=>[String(p.name).toLowerCase(),p]));
-    const data=played.filter(p=>String(p.name||"").toLowerCase().includes(q)).sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+    const data=played
+      .filter(p=>isRankedPlayer(p))
+      .filter(p=>String(p.name||"").toLowerCase().includes(q))
+      .sort((a,b)=>overallPoints(b)-overallPoints(a)||String(a.name).localeCompare(String(b.name)));
     target.innerHTML=data.map((p,i)=>{
       const t=testedMap.get(String(p.name).toLowerCase());
-      return `<div class="player-row">
+      return `<div class="player-row ${i < 3 ? `player-top-${i+1}` : ""}">
         <div class="rank">${i+1}</div>
         <div class="player"><div class="avatar avatar-full">${playerBodyUrl(p)?`<img src="${playerBodyUrl(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=playerSkinUrl(p)">`:""}</div><a class="player-link" href="player.html?name=${encodeURIComponent(p.name)}">${escapeHtml(p.name)}</a></div>
         <div>${escapeHtml(p.region||"—")}</div>
@@ -399,7 +409,7 @@ function renderProfile(){
   const p=players.find(x=>String(x.name).toLowerCase()===name.toLowerCase());
   if(!p){root.innerHTML=`<div class="empty-onyx">Player not found in the ONYX tier database.</div>`;return;}
   const body=playerBodyUrl(p);
-  const tested=KIT_KEYS.filter(k=>rawTier(p.rankings?.[k]));
+  const tested=KIT_KEYS.filter(k=>isRankedTier(p.rankings?.[k]));
   root.innerHTML=`
     <div class="profile-hero-card">
       <div class="profile-skin-panel">${body?`<img class="profile-full-skin" src="${body}" alt="${escapeHtml(p.name)} full Minecraft skin" loading="eager" referrerpolicy="no-referrer">`:`<div class="skin-placeholder">SKIN<br><small>UUID unavailable</small></div>`}</div>
@@ -431,10 +441,10 @@ async function renderKitsPage(){
   if(!root) return;
   const tested=players;
   root.innerHTML=KIT_KEYS.map(k=>{
-    const rows=tested.filter(p=>rawTier(p.rankings?.[k])).sort((a,b)=>tierScore(rawTier(b.rankings?.[k]))-tierScore(rawTier(a.rankings?.[k]))||String(a.name).localeCompare(String(b.name)));
+    const rows=tested.filter(p=>isRankedTier(p.rankings?.[k])).sort((a,b)=>tierScore(rawTier(b.rankings?.[k]))-tierScore(rawTier(a.rankings?.[k]))||String(a.name).localeCompare(String(b.name)));
     return `<section class="kit-directory-card">
       <div class="kit-directory-header"><div class="kit-directory-icon"><img src="${KIT_META[k].image}" alt="" loading="lazy"></div><div><div class="eyebrow">KIT</div><h2>${escapeHtml(KIT_META[k].label)}</h2><p>${rows.length} tested player${rows.length===1?"":"s"}</p></div></div>
-      <div class="kit-player-list">${rows.length?rows.map((p,i)=>`<a class="kit-player-row" href="player.html?name=${encodeURIComponent(p.name)}"><span class="kit-place">${String(i+1).padStart(2,"0")}</span><span class="kit-player-avatar">${playerSkinUrl(p)?`<img src="${playerSkinUrl(p)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""}</span><span class="kit-player-name">${escapeHtml(p.name)}<small>${escapeHtml(p.region||"—")}</small></span><b class="tier-badge ${tierClass(rawTier(p.rankings?.[k]))}">${escapeHtml(displayTier(p.rankings?.[k]))}</b></a>`).join(""):`<div class="empty-kit">No players tested in this kit yet.</div>`}</div>
+      <div class="kit-player-list">${rows.length?rows.map((p,i)=>`<a class="kit-player-row ${i < 3 ? `kit-top-${i+1}` : ""}" href="player.html?name=${encodeURIComponent(p.name)}"><span class="kit-place">${String(i+1).padStart(2,"0")}</span><span class="kit-player-avatar">${playerSkinUrl(p)?`<img src="${playerSkinUrl(p)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""}</span><span class="kit-player-name">${escapeHtml(p.name)}<small>${escapeHtml(p.region||"—")}</small></span><b class="tier-badge ${tierClass(rawTier(p.rankings?.[k]))}">${escapeHtml(displayTier(p.rankings?.[k]))}</b></a>`).join(""):`<div class="empty-kit">No players tested in this kit yet.</div>`}</div>
     </section>`;
   }).join("");
 }
