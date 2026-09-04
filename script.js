@@ -260,10 +260,16 @@ function renderHomePlayers(){
 
   if(q) data = data.filter(p => String(p.name || "").toLowerCase().includes(q));
 
+  // IMPORTANT: the tierlist itself is always ranked-only for the selected mode.
+  // A player ranked in Sword must not leak into Axe/UHC/etc.
   if(activeMode === "overall"){
     activeTier = null;
-  } else if(activeTier){
-    data = data.filter(p => tierTabGroup(p?.rankings?.[activeMode]) === activeTier);
+    data = data.filter(p => isRankedPlayer(p));
+  } else {
+    data = data.filter(p => isRankedTier(p.rankings?.[activeMode]));
+    if(activeTier){
+      data = data.filter(p => tierTabGroup(p.rankings?.[activeMode]) === activeTier);
+    }
   }
 
   const baseData = players

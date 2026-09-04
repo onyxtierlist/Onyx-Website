@@ -515,21 +515,19 @@ table, th, td, strong, b, em, small, code, pre,
 }
 
 
-/* ONYX TOP 3 RANKING HIGHLIGHTS */
-.leader-row.leader-top-1,.player-row.player-top-1,.kit-player-row.kit-top-1{
-  background:linear-gradient(90deg,rgba(244,191,58,.14),rgba(244,191,58,.035) 55%,transparent);
-  box-shadow:inset 3px 0 0 var(--gold,#f4bf3a);
-}
-.leader-row.leader-top-2,.player-row.player-top-2,.kit-player-row.kit-top-2{
-  background:linear-gradient(90deg,rgba(210,218,211,.09),rgba(210,218,211,.025) 55%,transparent);
-  box-shadow:inset 3px 0 0 #b9c1ba;
-}
-.leader-row.leader-top-3,.player-row.player-top-3,.kit-player-row.kit-top-3{
-  background:linear-gradient(90deg,rgba(169,124,70,.12),rgba(169,124,70,.025) 55%,transparent);
-  box-shadow:inset 3px 0 0 #a97c46;
-}
-.leader-row.leader-top-1 .leader-rank,.player-row.player-top-1 .rank,.kit-player-row.kit-top-1 .kit-place{
-  color:var(--gold-soft,#fff0a8);text-shadow:0 0 14px rgba(244,191,58,.38);
-}
-.leader-row.leader-top-2 .leader-rank,.player-row.player-top-2 .rank,.kit-player-row.kit-top-2 .kit-place{color:#d7ddd8}
-.leader-row.leader-top-3 .leader-rank,.player-row.player-top-3 .rank,.kit-player-row.kit-top-3 .kit-place{color:#c69458}
+/* ONYX TOP 3 — full-card competitive styling */
+.leader-row.leader-top-1{background:linear-gradient(100deg,rgba(255,211,76,.22),rgba(244,191,58,.10) 48%,rgba(244,191,58,.035));border-top-color:rgba(255,215,90,.35);box-shadow:inset 4px 0 0 #f4bf3a, inset 0 1px 0 rgba(255,236,160,.18), inset 0 -1px 0 rgba(244,191,58,.12)}
+.leader-row.leader-top-2{background:linear-gradient(100deg,rgba(220,228,224,.17),rgba(190,200,194,.07) 48%,rgba(190,200,194,.025));border-top-color:rgba(220,228,224,.22);box-shadow:inset 4px 0 0 #c7cfca, inset 0 1px 0 rgba(255,255,255,.10), inset 0 -1px 0 rgba(220,228,224,.08)}
+.leader-row.leader-top-3{background:linear-gradient(100deg,rgba(190,132,69,.20),rgba(169,124,70,.075) 48%,rgba(169,124,70,.025));border-top-color:rgba(190,132,69,.25);box-shadow:inset 4px 0 0 #a97c46, inset 0 1px 0 rgba(235,180,110,.12), inset 0 -1px 0 rgba(169,124,70,.08)}
+.leader-row.leader-top-1:hover{background:linear-gradient(100deg,rgba(255,211,76,.29),rgba(244,191,58,.13) 48%,rgba(244,191,58,.055))}
+.leader-row.leader-top-2:hover{background:linear-gradient(100deg,rgba(220,228,224,.23),rgba(190,200,194,.10) 48%,rgba(190,200,194,.04))}
+.leader-row.leader-top-3:hover{background:linear-gradient(100deg,rgba(190,132,69,.26),rgba(169,124,70,.10) 48%,rgba(169,124,70,.04))}
+.leader-row.leader-top-1 .leader-rank{color:#ffe28a;text-shadow:0 0 16px rgba(244,191,58,.55)}
+.leader-row.leader-top-2 .leader-rank{color:#edf2ee;text-shadow:0 0 12px rgba(220,228,224,.28)}
+.leader-row.leader-top-3 .leader-rank{color:#e0ad70;text-shadow:0 0 12px rgba(169,124,70,.32)}
+.leader-row.leader-top-1 .leader-name{color:#fff8dc}
+.leader-row.leader-top-2 .leader-name{color:#f1f4f1}
+.leader-row.leader-top-3 .leader-name{color:#f3e0c8}
+.leader-row.leader-top-1 .leader-overall b{color:#ffe28a}
+.leader-row.leader-top-2 .leader-overall b{color:#edf2ee}
+.leader-row.leader-top-3 .leader-overall b{color:#e0ad70}
