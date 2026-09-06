@@ -65,8 +65,17 @@ const TIER_POINTS = Object.freeze({
   HT1: 60
 });
 function normalizeTier(value){ return String(value||"").trim().toUpperCase(); }
-function pointsForTier(tier){
+function baseTier(tier){
   const key=normalizeTier(tier);
+  return key.startsWith("R") ? key.slice(1) : key;
+}
+function isRetiredTier(tier){ return /^R(?:LT|HT)[1-2]$/.test(normalizeTier(tier)); }
+function isValidTier(tier){
+  const key=normalizeTier(tier);
+  return Object.prototype.hasOwnProperty.call(TIER_POINTS,key) || isRetiredTier(key);
+}
+function pointsForTier(tier){
+  const key=baseTier(tier);
   return Object.prototype.hasOwnProperty.call(TIER_POINTS,key) ? TIER_POINTS[key] : 0;
 }
 
@@ -472,7 +481,7 @@ const server = http.createServer(async(req,res)=>{
       const kit=kitAliases[rawKit] || rawKit;
       const rank=normalizeTier(x.rank);
       const tierPoints=pointsForTier(rank);
-      if(!tierPoints) throw new Error("Invalid tier. Use LT5, HT5, LT4, HT4, LT3, HT3, LT2, HT2, LT1, or HT1.");
+      if(!isValidTier(rank)) throw new Error("Invalid tier. Use LT5, HT5, LT4, HT4, LT3, HT3, LT2, HT2, LT1, HT1, RLT2, RHT2, RLT1, or RHT1.");
 
       // Discord test results are allowed to create/update the matching PLAYED
       // record: a player has completed an official test, so the identity is known.
@@ -622,11 +631,14 @@ const server = http.createServer(async(req,res)=>{
       const rankings=player.rankings||{};
       const ranked=Object.values(rankings)
         .map(r=>({rank:normalizeTier(r?.rank),points:pointsForTier(r?.rank)}))
-        .filter(r=>r.points>0);
+        .filter(r=>r.points>0 && isValidTier(r.rank));
       if(!ranked.length) return sendJSON(res,{error:"player has no tier tests"},404);
 
-      // Higher points means the stronger/better tier.
-      const best=ranked.sort((a,b)=>b.points-a.points)[0];
+      // Active tiers take priority over retired tiers. If the player only has
+      // retired results, return the retired tier so clients can display it.
+      const active=ranked.filter(r=>!isRetiredTier(r.rank));
+      const pool=active.length ? active : ranked;
+      const best=pool.sort((a,b)=>b.points-a.points)[0];
       const tierMatch=best.rank.match(/^[HL]T([1-5])$/);
       const displayTier=tierMatch ? `Tier ${tierMatch[1]}` : best.rank;
 
@@ -713,7 +725,7 @@ const server = http.createServer(async(req,res)=>{
        };
        const normalizedKit=normalizedKitAliases[String(x.kit).trim().toLowerCase()] || String(x.kit).trim().toLowerCase();
        const tierPoints=pointsForTier(normalizedRank);
-      if(!tierPoints) throw new Error("Invalid tier. Use LT5, HT5, LT4, HT4, LT3, HT3, LT2, HT2, LT1, or HT1.");
+      if(!isValidTier(normalizedRank)) throw new Error("Invalid tier. Use LT5, HT5, LT4, HT4, LT3, HT3, LT2, HT2, LT1, HT1, RLT2, RHT2, RLT1, or RHT1.");
       p.rankings[normalizedKit]={rank:normalizedRank,points:tierPoints,tester:x.tester||"ONYX",date:new Date().toISOString(),notes:x.notes||""};
       p.points=Object.values(p.rankings).reduce((s,v)=>s+Number(v.points||0),0);
       db.tests.push({playerId:p.id,kit:normalizedKit,rank:normalizedRank,points:tierPoints,tester:x.tester||"ONYX",date:new Date().toISOString(),notes:x.notes||""});

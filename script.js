@@ -54,11 +54,23 @@ function rawTier(value){
   return String(value).toUpperCase();
 }
 // Everywhere outside the tier filter tabs, keep the real ONYX rank code (HT1/LT1/etc.).
+function isRetiredTier(value){
+  return /^R(?:LT|HT)[1-2]$/.test(rawTier(value));
+}
 function isRankedTier(value){
   return /^(LT|HT)[1-5]$/.test(rawTier(value));
 }
+function isDisplayTier(value){
+  return isRankedTier(value) || isRetiredTier(value);
+}
+function isTierResult(value){
+  return isDisplayTier(value);
+}
 function isRankedPlayer(player){
   return !!player && Object.values(player?.rankings || {}).some(isRankedTier);
+}
+function isDisplayPlayer(player){
+  return !!player && Object.values(player?.rankings || {}).some(isDisplayTier);
 }
 
 function displayTier(value){
@@ -76,20 +88,22 @@ function tierTabGroup(value){
 
 function tierScore(value){
   const raw = rawTier(value);
-  const m = raw.match(/^[HL]T([1-5])$/);
+  const m = raw.match(/^R?([HL]T)([1-5])$/);
   if(m){
-    const tier = Number(m[1]);
+    const tier = Number(m[2]);
     // Lower tier number is stronger; HT is stronger than LT within the same tier.
-    return (6 - tier) * 100 + (raw.startsWith("HT") ? 1 : 0);
+    return (6 - tier) * 100 + (raw.includes("HT") ? 1 : 0);
   }
   const grouped = tierTabGroup(raw);
   const i = TIER_ORDER.indexOf(grouped);
   return i===-1 ? -1 : TIER_ORDER.length-i;
 }
 function highestTier(player){
-  const values=Object.values(player?.rankings || {}).map(rawTier).filter(isRankedTier);
+  const values=Object.values(player?.rankings || {}).map(rawTier).filter(isDisplayTier);
   if(!values.length) return "";
-  return values.sort((a,b)=>tierScore(b)-tierScore(a))[0];
+  const active=values.filter(v=>!isRetiredTier(v));
+  const pool=active.length ? active : values;
+  return pool.sort((a,b)=>tierScore(b)-tierScore(a))[0];
 }
 function tierClass(tier){return displayTier(tier).toLowerCase().replace(/\s+/g,"-");}
 
@@ -135,7 +149,8 @@ function filteredPlayers(){
 
 function tierPointsFor(tier){
   const points={LT5:1,HT5:2,LT4:3,HT4:4,LT3:6,HT3:10,LT2:20,HT2:30,LT1:45,HT1:60};
-  return points[rawTier(tier)] ?? 0;
+  const raw=rawTier(tier);
+  return points[raw.startsWith("R") ? raw.slice(1) : raw] ?? 0;
 }
 
 function rankingPoints(ranking){
@@ -149,7 +164,7 @@ function rankingPoints(ranking){
 function overallPoints(player){
   const testedTiers = Object.values(player?.rankings || {})
     .map(rawTier)
-    .filter(t => tierPointsFor(t) > 0);
+    .filter(t => isTierResult(t) && tierPointsFor(t) > 0);
   if(!testedTiers.length) return 0;
   return testedTiers.reduce((sum, tier) => sum + tierPointsFor(tier), 0);
 }
@@ -305,7 +320,7 @@ function renderHomePlayers(){
   const rows = data.map((p,i) => {
     const skin = playerSkinUrl(p);
     const chips = activeMode === "overall"
-      ? KIT_KEYS.map(k => isRankedTier(p.rankings?.[k]) ? modeRankChip(p,k) : "").filter(Boolean).join("")
+      ? KIT_KEYS.map(k => isTierResult(p.rankings?.[k]) ? modeRankChip(p,k) : "").filter(Boolean).join("")
       : modeRankChip(p, activeMode);
 
     const selectedTier = activeMode === "overall"
@@ -426,7 +441,7 @@ function renderProfile(){
   const p=players.find(x=>String(x.name).toLowerCase()===name.toLowerCase());
   if(!p){root.innerHTML=`<div class="empty-onyx">Player not found in the ONYX tier database.</div>`;return;}
   const body=playerBodyUrl(p);
-  const tested=KIT_KEYS.filter(k=>isRankedTier(p.rankings?.[k]));
+  const tested=KIT_KEYS.filter(k=>isTierResult(p.rankings?.[k]));
   root.innerHTML=`
     <div class="profile-hero-card">
       <div class="profile-skin-panel">${body?`<img class="profile-full-skin" src="${body}" alt="${escapeHtml(p.name)} full Minecraft skin" loading="eager" referrerpolicy="no-referrer">`:`<div class="skin-placeholder">SKIN<br><small>UUID unavailable</small></div>`}</div>
@@ -458,7 +473,7 @@ async function renderKitsPage(){
   if(!root) return;
   const tested=players;
   root.innerHTML=KIT_KEYS.map(k=>{
-    const rows=tested.filter(p=>isRankedTier(p.rankings?.[k])).sort((a,b)=>tierScore(rawTier(b.rankings?.[k]))-tierScore(rawTier(a.rankings?.[k]))||String(a.name).localeCompare(String(b.name)));
+    const rows=tested.filter(p=>isTierResult(p.rankings?.[k])).sort((a,b)=>tierScore(rawTier(b.rankings?.[k]))-tierScore(rawTier(a.rankings?.[k]))||String(a.name).localeCompare(String(b.name)));
     return `<section class="kit-directory-card">
       <div class="kit-directory-header"><div class="kit-directory-icon"><img src="${KIT_META[k].image}" alt="" loading="lazy"></div><div><div class="eyebrow">KIT</div><h2>${escapeHtml(KIT_META[k].label)}</h2><p>${rows.length} tested player${rows.length===1?"":"s"}</p></div></div>
       <div class="kit-player-list">${rows.length?rows.map((p,i)=>`<a class="kit-player-row ${i < 3 ? `kit-top-${i+1}` : ""}" href="player.html?name=${encodeURIComponent(p.name)}"><span class="kit-place">${String(i+1).padStart(2,"0")}</span><span class="kit-player-avatar">${playerSkinUrl(p)?`<img src="${playerSkinUrl(p)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""}</span><span class="kit-player-name">${escapeHtml(p.name)}<small>${escapeHtml(p.region||"—")}</small></span><b class="tier-badge ${tierClass(rawTier(p.rankings?.[k]))}">${escapeHtml(displayTier(p.rankings?.[k]))}</b></a>`).join(""):`<div class="empty-kit">No players tested in this kit yet.</div>`}</div>

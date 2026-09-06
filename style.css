@@ -533,3 +533,58 @@ table, th, td, strong, b, em, small, code, pre,
 }
 .leader-row.leader-top-2 .leader-rank,.player-row.player-top-2 .rank,.kit-player-row.kit-top-2 .kit-place{color:#d7ddd8}
 .leader-row.leader-top-3 .leader-rank,.player-row.player-top-3 .rank,.kit-player-row.kit-top-3 .kit-place{color:#c69458}
+
+/* =========================================================
+   MCTIERS-INSPIRED RANKING CARDS
+   ========================================================= */
+.leaderboard-head{display:none!important}
+.leader-row{
+  display:grid!important;
+  grid-template-columns:68px minmax(270px,1.35fr) minmax(300px,2fr) 125px!important;
+  min-height:92px!important;
+  margin:0 10px 8px;
+  padding:10px 14px 10px 0!important;
+  border:1px solid rgba(255,255,255,.07)!important;
+  border-radius:11px;
+  background:linear-gradient(90deg,rgba(17,24,20,.98),rgba(12,17,14,.94));
+  box-shadow:0 8px 22px rgba(0,0,0,.16);
+  overflow:hidden;
+  position:relative;
+}
+.leader-row:before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:rgba(247,201,87,.18)
+}
+.leader-row:hover{transform:translateY(-1px);background:linear-gradient(90deg,rgba(21,29,24,.98),rgba(13,19,15,.96));border-color:rgba(247,201,87,.16)}
+.leader-rank{
+  height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Russo One',Inter,sans-serif;font-size:25px;color:#d7ddd8;
+}
+.leader-player{gap:13px}
+.leader-skin{
+  width:118px;height:68px;border:0;border-radius:7px;background:linear-gradient(135deg,rgba(247,201,87,.20),rgba(247,201,87,.04));
+  position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center
+}
+.leader-skin:after{content:"";position:absolute;right:-22px;top:-20px;width:80px;height:120px;transform:skewX(-28deg);background:rgba(247,201,87,.08);border-left:1px solid rgba(255,255,255,.08)}
+.leader-skin img{width:54px!important;height:64px!important;object-fit:contain;position:relative;z-index:1}
+.leader-name{font-size:17px!important;font-weight:900!important;letter-spacing:.01em}
+.leader-region{font-size:9px!important;text-transform:uppercase;letter-spacing:.08em}
+.combat-title{font-size:9px!important;color:#91a099!important;letter-spacing:.08em!important}
+.leader-kits{display:flex;align-items:center;gap:7px;flex-wrap:wrap;align-content:center}
+.leader-kits .leader-chip{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:7px}
+.leader-overall{text-align:left!important;padding-left:8px}
+.leader-overall b{font-size:17px!important}
+.leader-overall small{font-size:9px!important}
+.leader-row.leader-top-1:before{background:#f0bf43}.leader-row.leader-top-2:before{background:#b9c2c7}.leader-row.leader-top-3:before{background:#b56e37}
+.leader-row.leader-top-1 .leader-rank{color:#f7c957}.leader-row.leader-top-2 .leader-rank{color:#d7ddd8}.leader-row.leader-top-3 .leader-rank{color:#c69458}
+
+@media(max-width:760px){
+  .leader-row{grid-template-columns:42px 1fr 82px!important;margin:0 6px 7px;padding:8px 9px 8px 0!important;min-height:76px!important}
+  .leader-rank{font-size:20px}
+  .leader-skin{width:82px;height:56px}.leader-skin img{width:44px!important;height:53px!important}
+  .leader-kits{display:none}.leader-overall{padding-left:4px}
+  .leader-name{font-size:14px!important}.combat-title{font-size:8px!important}
+}
+
+/* Retired LT2+ tier badges */
+.tier-rlt2,.tier-rht2,.tier-rlt1,.tier-rht1{color:#a8b0ab!important;border-color:rgba(168,176,171,.28)!important;background:rgba(168,176,171,.055)!important}
+.leader-chip b{white-space:nowrap}
