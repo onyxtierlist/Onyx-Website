@@ -16,7 +16,7 @@ const MODES = {
 
 // Homepage "TIERS" overview grid: show the real ONYX rank codes (10 total),
 // not the grouped Tier 1-5 labels. Weakest to strongest, matching TIER_POINTS order.
-const TIERS = ["LT5","HT5","LT4","HT4","LT3","HT3","LT2","HT2","LT1","HT1"];
+const TIERS = ["LT5","HT5","LT4","HT4","LT3","HT3","LT2","HT2","LT1","HT1","RLT2","RHT2","RLT1","RHT1"];
 const TIER_ORDER = ["Tier 1","Tier 2","Tier 3","Tier 4","Tier 5"];
 const TIER_LABELS = Object.fromEntries(TIERS.map(t=>[t,t]));
 
@@ -80,7 +80,7 @@ function displayTier(value){
 // The tier filter tabs intentionally group HT/LT into a human-friendly Tier 1-5 label.
 function tierTabGroup(value){
   const raw = rawTier(value);
-  const m = raw.match(/^[HL]T([1-5])$/);
+  const m = raw.match(/^R?[HL]T([1-5])$/);
   if(m) return `Tier ${m[1]}`;
   const generic = raw.match(/^TIER\s*([1-5])$/);
   return generic ? `Tier ${generic[1]}` : raw;
@@ -144,7 +144,7 @@ function filteredPlayers(){
   const q=(document.getElementById("searchInput")?.value || document.getElementById("playerSearch")?.value || "").toLowerCase().trim();
   let data=players.filter(p=>activeRegion==="all" || p.region===activeRegion);
   if(q) data=data.filter(p=>String(p.name||"").toLowerCase().includes(q));
-  return data.filter(p=>highestTier(p)).sort((a,b)=>tierScore(highestTier(b))-tierScore(highestTier(a)) || String(a.name).localeCompare(String(b.name)));
+  return data.sort((a,b)=>tierScore(highestTier(b))-tierScore(highestTier(a)) || overallPoints(b)-overallPoints(a) || String(a.name).localeCompare(String(b.name)));
 }
 
 function tierPointsFor(tier){
@@ -297,10 +297,11 @@ function renderHomePlayers(){
     data = data.filter(p => tierTabGroup(p?.rankings?.[activeMode]) === activeTier);
   }
 
+  // Keep UNRANKED players visible everywhere. A selected tier tab still filters
+  // to that tier, but the normal leaderboard never silently removes players.
   const baseData = players
     .filter(p => activeRegion === "all" || p.region === activeRegion)
-    .filter(p => !q || String(p.name || "").toLowerCase().includes(q))
-    .filter(p => activeMode === "overall" ? isRankedPlayer(p) : isRankedTier(p?.rankings?.[activeMode]));
+    .filter(p => !q || String(p.name || "").toLowerCase().includes(q));
 
   data = data.sort((a,b) =>
     playerModeScore(b, activeMode) - playerModeScore(a, activeMode) ||
@@ -310,7 +311,7 @@ function renderHomePlayers(){
   const tierBar = renderTierTabsForMode(activeMode, baseData);
 
   if(!data.length){
-    list.innerHTML = tierBar + `<div class="empty-onyx">No ONYX-tested players in this tier yet.</div>`;
+    list.innerHTML = tierBar + `<div class="empty-onyx">No players found.</div>`;
     bindTierTabs();
     return;
   }
@@ -414,7 +415,7 @@ async function renderPlayersPage(){
     const tested=normalizeApiPayload(await testedRes.json());
     const testedMap=new Map(tested.map(p=>[String(p.name).toLowerCase(),p]));
     const data=played
-      .filter(p=>isRankedPlayer(p))
+      // PLAYED is the complete player population: include unranked players too.
       .filter(p=>String(p.name||"").toLowerCase().includes(q))
       .sort((a,b)=>overallPoints(b)-overallPoints(a)||String(a.name).localeCompare(String(b.name)));
     target.innerHTML=data.map((p,i)=>{
