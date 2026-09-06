@@ -154,6 +154,22 @@ function overallPoints(player){
   return testedTiers.reduce((sum, tier) => sum + tierPointsFor(tier), 0);
 }
 
+function combatTitle(points){
+  const p=Number(points)||0;
+  if(p>=400) return "COMBAT GRANDMASTER";
+  if(p>=250) return "COMBAT MASTER";
+  if(p>=100) return "COMBAT ACE";
+  if(p>=50) return "COMBAT SPECIALIST";
+  if(p>=20) return "COMBAT CADET";
+  if(p>=10) return "COMBAT NOVICE";
+  if(p>=1) return "ROOKIE";
+  return "";
+}
+
+function combatTitleForPlayer(player){
+  return combatTitle(overallPoints(player));
+}
+
 function competitionRank(sortedPlayers, index, mode){
   if(index === 0) return 1;
   const current = mode === "overall"
@@ -260,22 +276,16 @@ function renderHomePlayers(){
 
   if(q) data = data.filter(p => String(p.name || "").toLowerCase().includes(q));
 
-  // IMPORTANT: the tierlist itself is always ranked-only for the selected mode.
-  // A player ranked in Sword must not leak into Axe/UHC/etc.
   if(activeMode === "overall"){
     activeTier = null;
-    data = data.filter(p => isRankedPlayer(p));
-  } else {
-    data = data.filter(p => isRankedTier(p.rankings?.[activeMode]));
-    if(activeTier){
-      data = data.filter(p => tierTabGroup(p.rankings?.[activeMode]) === activeTier);
-    }
+  } else if(activeTier){
+    data = data.filter(p => tierTabGroup(p?.rankings?.[activeMode]) === activeTier);
   }
 
   const baseData = players
     .filter(p => activeRegion === "all" || p.region === activeRegion)
     .filter(p => !q || String(p.name || "").toLowerCase().includes(q))
-    .filter(p => activeMode === "overall" ? isRankedPlayer(p) : isRankedTier(p.rankings?.[activeMode]));
+    .filter(p => activeMode === "overall" ? isRankedPlayer(p) : isRankedTier(p?.rankings?.[activeMode]));
 
   data = data.sort((a,b) =>
     playerModeScore(b, activeMode) - playerModeScore(a, activeMode) ||
@@ -313,6 +323,7 @@ function renderHomePlayers(){
           <div class="leader-skin">${skin ? `<img src="${skin}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</div>
           <div>
             <a class="leader-name" href="player.html?name=${encodeURIComponent(p.name)}">${escapeHtml(p.name)}</a>
+            ${combatTitleForPlayer(p) ? `<div class="combat-title">${escapeHtml(combatTitleForPlayer(p))}</div>` : ""}
             <div class="leader-region"><i></i>${escapeHtml(p.region || "—")}</div>
           </div>
         </div>
@@ -395,7 +406,7 @@ async function renderPlayersPage(){
       const t=testedMap.get(String(p.name).toLowerCase());
       return `<div class="player-row ${i < 3 ? `player-top-${i+1}` : ""}">
         <div class="rank">${i+1}</div>
-        <div class="player"><div class="avatar avatar-full">${playerBodyUrl(p)?`<img src="${playerBodyUrl(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=playerSkinUrl(p)">`:""}</div><a class="player-link" href="player.html?name=${encodeURIComponent(p.name)}">${escapeHtml(p.name)}</a></div>
+        <div class="player"><div class="avatar avatar-full">${playerBodyUrl(p)?`<img src="${playerBodyUrl(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=playerSkinUrl(p)">`:""}</div><div class="player-name-stack"><a class="player-link" href="player.html?name=${encodeURIComponent(p.name)}">${escapeHtml(p.name)}</a>${t && combatTitleForPlayer(t) ? `<span class="combat-title">${escapeHtml(combatTitleForPlayer(t))}</span>` : ""}</div></div>
         <div>${escapeHtml(p.region||"—")}</div>
         <div class="tier-badge ${tierClass(highestTier(t))}">${escapeHtml(highestTier(t)||"—")}</div>
         <div>${t?"Tier tested":"Played"}</div>
@@ -445,7 +456,7 @@ function renderProfile(){
 async function renderKitsPage(){
   const root=document.getElementById("kitsRoot");
   if(!root) return;
-  const tested=players.filter(isRankedPlayer);
+  const tested=players;
   root.innerHTML=KIT_KEYS.map(k=>{
     const rows=tested.filter(p=>isRankedTier(p.rankings?.[k])).sort((a,b)=>tierScore(rawTier(b.rankings?.[k]))-tierScore(rawTier(a.rankings?.[k]))||String(a.name).localeCompare(String(b.name)));
     return `<section class="kit-directory-card">
