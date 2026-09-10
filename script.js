@@ -193,6 +193,15 @@ function competitionRank(sortedPlayers, index, mode){
   const previous = mode === "overall"
     ? overallPoints(sortedPlayers[index - 1])
     : rankingPoints(sortedPlayers[index - 1]?.rankings?.[mode]);
+
+  if(mode !== "overall"){
+    // Gamemode tabs use dense ranking: 1, 1, 1, 2, 3...
+    // so tied tiers do not cause rank numbers to disappear.
+    if(current === previous) return competitionRank(sortedPlayers, index - 1, mode);
+    return competitionRank(sortedPlayers, index - 1, mode) + 1;
+  }
+
+  // Overall keeps competition ranking: 1, 1, 3, 4...
   if(current === previous) return competitionRank(sortedPlayers, index - 1, mode);
   return index + 1;
 }
