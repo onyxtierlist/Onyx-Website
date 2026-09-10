@@ -293,22 +293,35 @@ function renderHomePlayers(){
 
   if(activeMode === "overall"){
     activeTier = null;
-  } else if(activeTier){
-    data = data.filter(p => tierTabGroup(p?.rankings?.[activeMode]) === activeTier);
+  } else {
+    // Gamemode tabs only contain players who actually have a tier in that kit.
+    // Retired tiers (RLT2/RHT2/RLT1/RHT1) count as tiered results too.
+    data = data.filter(p => isTierResult(p?.rankings?.[activeMode]));
+    if(activeTier){
+      data = data.filter(p => tierTabGroup(p?.rankings?.[activeMode]) === activeTier);
+    }
   }
 
-  // Keep UNRANKED players visible everywhere. A selected tier tab still filters
-  // to that tier, but the normal leaderboard never silently removes players.
+  // Overall intentionally keeps the complete player population, including
+  // unranked players. Gamemode tabs are ranked-only by the filter above.
   const baseData = players
     .filter(p => activeRegion === "all" || p.region === activeRegion)
     .filter(p => !q || String(p.name || "").toLowerCase().includes(q));
+  const tierTabData = activeMode === "overall"
+    ? baseData
+    : baseData.filter(p => isTierResult(p?.rankings?.[activeMode]));
 
-  data = data.sort((a,b) =>
-    playerModeScore(b, activeMode) - playerModeScore(a, activeMode) ||
-    String(a.name).localeCompare(String(b.name))
-  );
+  data = data.sort((a,b) => {
+    if(activeMode === "overall"){
+      return overallPoints(b) - overallPoints(a) || String(a.name).localeCompare(String(b.name));
+    }
+    // Stronger tier first. Players with the exact same tier remain tied.
+    return tierScore(b?.rankings?.[activeMode]) - tierScore(a?.rankings?.[activeMode]) ||
+      rankingPoints(b?.rankings?.[activeMode]) - rankingPoints(a?.rankings?.[activeMode]) ||
+      String(a.name).localeCompare(String(b.name));
+  });
 
-  const tierBar = renderTierTabsForMode(activeMode, baseData);
+  const tierBar = renderTierTabsForMode(activeMode, tierTabData);
 
   if(!data.length){
     list.innerHTML = tierBar + `<div class="empty-onyx">No players found.</div>`;
@@ -319,6 +332,7 @@ function renderHomePlayers(){
   const headerMode = activeMode === "overall" ? "KIT RANKS" : `${MODES[activeMode].label.toUpperCase()} RANK`;
 
   const rows = data.map((p,i) => {
+    const rank = competitionRank(data, i, activeMode);
     const skin = playerSkinUrl(p);
     const chips = activeMode === "overall"
       ? KIT_KEYS.map(k => isTierResult(p.rankings?.[k]) ? modeRankChip(p,k) : "").filter(Boolean).join("")
@@ -333,8 +347,8 @@ function renderHomePlayers(){
       : Number(p?.rankings?.[activeMode]?.points ?? tierPointsFor(selectedTier));
 
     return `
-      <div class="leader-row ${i < 3 ? `leader-top-${i+1}` : ""}">
-        <div class="leader-rank">${i+1}</div>
+      <div class="leader-row ${rank <= 3 ? `leader-top-${rank}` : ""}">
+        <div class="leader-rank">${rank}</div>
         <div class="leader-player">
           <div class="leader-skin">${skin ? `<img src="${skin}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}</div>
           <div>
