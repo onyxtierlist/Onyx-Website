@@ -201,9 +201,11 @@ function competitionRank(sortedPlayers, index, mode){
     return competitionRank(sortedPlayers, index - 1, mode) + 1;
   }
 
-  // Overall keeps competition ranking: 1, 1, 3, 4...
+  // Overall also uses dense ranking: 1, 1, 2, 3...
+  // Equal total points share the same rank, and the next distinct point total
+  // receives the next consecutive rank number.
   if(current === previous) return competitionRank(sortedPlayers, index - 1, mode);
-  return index + 1;
+  return competitionRank(sortedPlayers, index - 1, mode) + 1;
 }
 
 function rankingForMode(player, mode){
